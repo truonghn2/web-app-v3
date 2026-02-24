@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import './style.css'
 import App from './App.vue'
 import router from './router'
@@ -21,4 +22,5 @@ const vuetify = createVuetify({
 createApp(App)
     .use(vuetify)
     .use(router)
+    .use(createPinia())
     .mount('#app')

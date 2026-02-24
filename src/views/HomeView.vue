@@ -1,7 +1,21 @@
 <template>
   <v-container class="py-6">
     <div class="section-title">
-        <span class="title-text">Boba Drinks</span>
+        <span class="title-text">Top Boba Drinks</span>
+    </div>
+    <div class="view-all-row">
+      <span class="view-all-hint">Want more options?</span>
+
+      <v-btn
+        class="view-all-btn"
+        color="#C96B8A"
+        variant="flat"
+        rounded="lg"
+        prepend-icon="mdi-view-grid"
+        @click="goToDrinks"
+      >
+        View all drinks
+      </v-btn>
     </div>
     <div
       @mouseenter="isCycling = false"
@@ -64,22 +78,26 @@
               </v-chip>
             </v-img>
 
-            <v-card-title class="text-h6 font-weight-bold">
-              {{ drink.name }}
+            <!-- title row: name + price -->
+            <v-card-title class="drink-title-row">
+              <span class="drink-name">{{ drink.name }}</span>
+              <span class="drink-price">${{ drink.price.toFixed(2) }}</span>
             </v-card-title>
 
-            <v-card-subtitle>
+            <!-- description -->
+            <v-card-subtitle class="drink-desc">
               {{ drink.description }}
             </v-card-subtitle>
 
-            <v-card-text class="d-flex align-center justify-space-between">
-              <div class="text-body-2">
-                Base: <strong>{{ drink.base }}</strong>
-                <br />
-                Topping: <strong>{{ drink.topping }}</strong>
+            <!-- grouped details -->
+            <v-card-text class="drink-details">
+              <div class="detail-line">
+                <span class="detail-label">Base:</span>
+                <strong class="detail-value">{{ drink.base }}</strong>
               </div>
-              <div class="text-body-1 font-weight-bold">
-                ${{ drink.price.toFixed(2) }}
+              <div class="detail-line">
+                <span class="detail-label">Topping:</span>
+                <strong class="detail-value">{{ drink.topping }}</strong>
               </div>
             </v-card-text>
           </v-card>
@@ -107,9 +125,25 @@
       </v-btn>
     </div>
 
+    <!-- slide position label -->
+    <div class="carousel-position" aria-live="polite">
+      {{ active + 1 }} of {{ drinks.length }}
+    </div>
+
     <!-- Details Dialog-->
     <v-dialog v-model="dialogOpen" max-width="600">
       <v-card rounded="xl">
+        <!-- top-right X close -->
+        <v-btn
+          class="dialog-x"
+          icon
+          variant="flat"
+          size="medium"
+          :aria-label="'Close dialog'"
+          @click="dialogOpen = false"
+        >
+          <v-icon icon="mdi-close" />
+        </v-btn>
         <v-img :src="selected?.image" height="260" contain class="dialog-img" />
 
         <v-card-title class="text-h6 font-weight-bold">
@@ -145,12 +179,18 @@
             </v-list-item>
           </v-list>
         </v-card-text>
-
         <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="dialogOpen = false">Close</v-btn>
-          <!-- <v-btn color="#c96b8a" variant="flat" @click="dialogOpen = false">
-            Favorite
-          </v-btn> -->
+        <v-btn
+            class="dialog-add-btn"
+            color="#C96B8A"
+            variant="flat"
+            size="large"
+            prepend-icon="mdi-cart-plus"
+            rounded="lg"
+            @click="addToCart(selected)"
+        >
+            Add to Cart
+        </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -159,85 +199,40 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useFavoritesStore } from '../stores/favoritesStore'
+import { useDrinksStore } from '../stores/drinksStore'
+import { useCartStore } from '../stores/cartStore'
+
+const router = useRouter()
+const drinksStore = useDrinksStore()
+const favoritesStore = useFavoritesStore()
+const cartStore = useCartStore()
 
 const active = ref(0)
-
 const img = (file) => new URL(`../assets/boba/${file}`, import.meta.url).href
-
-const favorites = ref(new Set())
-
 const isCycling = ref(true)
 
-function isFavorite(id) {
-  return favorites.value.has(id)
-}
+const isFavorite = favoritesStore.isFavorite
+const toggleFavorite = favoritesStore.toggleFavorite
+const drinks = drinksStore.topDrinks
 
-function toggleFavorite(id) {
-  const next = new Set(favorites.value) // ensure reactivity updates
-  if (next.has(id)) next.delete(id)
-  else next.add(id)
-  favorites.value = next
-}
-
-const drinks = [
-  {
-    id: 1,
-    name: 'Brown Sugar Milk Tea',
-    tag: 'Best Seller',
-    description: 'Caramel-like brown sugar with creamy milk tea',
-    base: 'Milk Tea',
-    topping: 'Brown Sugar Boba',
-    price: 6.49,
-    image: img('brown-sugar.jpg'),
-  },
-  {
-    id: 2,
-    name: 'Taro Milk Tea',
-    tag: 'Fan Favorite',
-    description: 'Sweet, nutty taro flavor with a smooth finish',
-    base: 'Milk Tea',
-    topping: 'Tapioca Pearls',
-    price: 6.29,
-    image: img('taro.jpg'),
-  },
-  {
-    id: 3,
-    name: 'Matcha Milk Tea',
-    tag: 'Creamy',
-    description: 'Earthy matcha blended into a milk tea',
-    base: 'Matcha',
-    topping: 'Tapioca Pearls',
-    price: 6.59,
-    image: img('matcha.jpg'),
-  },
-  {
-    id: 4,
-    name: 'Strawberry Fruit Tea',
-    tag: 'Refreshing',
-    description: 'Bright strawberry tea with a fruity punch',
-    base: 'Fruit Tea',
-    topping: 'Lychee Jelly',
-    price: 5.99,
-    image: img('strawberry.jpg'),
-  },
-  {
-    id: 5,
-    name: 'Thai Tea',
-    tag: 'Classic',
-    description: 'Bold Thai tea with sweet, creamy notes',
-    base: 'Thai Tea',
-    topping: 'Boba',
-    price: 6.19,
-    image: img('thai-tea.jpg'),
-  },
-]
 
 const dialogOpen = ref(false)
 const selected = ref(null)
 
+function goToDrinks() {
+  router.push('/drinks')
+}
+
 function openDrink(drink) {
   selected.value = drink
   dialogOpen.value = true
+}
+
+function addToCart(drink) {
+  cartStore.add(drink, 1)
+  dialogOpen.value = false
 }
 </script>
 
@@ -299,5 +294,100 @@ function openDrink(drink) {
 
 .fav-btn :deep(.v-icon){
   color: #C96B8A;
+}
+
+.carousel-position {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+/* --- hierarchy improvements --- */
+
+.drink-title-row{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 2px;
+}
+
+/* make name the strongest */
+.drink-name{
+  font-size: 1.35rem;      /* bigger than before */
+  font-weight: 800;
+  line-height: 1.15;
+  color: rgba(0,0,0,0.88);
+}
+
+/* price now sits beside name and stands out */
+.drink-price{
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: rgba(0,0,0,0.78);
+  white-space: nowrap;
+}
+
+/* description is clearly secondary */
+.drink-desc{
+  margin-top: 2px;
+  font-size: 0.98rem;
+  color: rgba(0,0,0,0.62);
+}
+
+/* details grouped visually */
+.drink-details{
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0,0,0,0.08);
+}
+
+.detail-line{
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.95rem;
+  color: rgba(0,0,0,0.70);
+  line-height: 1.4;
+}
+
+.detail-label{
+  color: rgba(0,0,0,0.55);
+}
+
+.detail-value{
+  color: rgba(0,0,0,0.78);
+}
+
+.dialog-x{
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+  color: #C96B8A;
+}
+
+.view-all-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 300px;
+}
+
+.view-all-hint{
+  color: rgba(0,0,0,0.62);
+  font-weight: 600;
+}
+
+.view-all-btn{
+  letter-spacing: 0.2px;
+  box-shadow: 0 8px 18px rgba(201, 107, 138, 0.25);
 }
 </style>
